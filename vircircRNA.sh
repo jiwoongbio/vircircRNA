@@ -14,7 +14,7 @@ if [ -z "$fastqFiles" ]; then
 fi
 perl -MBio::DB::Fasta -e '' || exit 1
 
-perl $directory/vircircRNA_genome.pl $referenceFastaFile > $outputPrefix.vircircRNA_genome.fasta
+perl $directory/vircircRNA_genome.pl -c '*' $referenceFastaFile > $outputPrefix.vircircRNA_genome.fasta
 
 bwa index $outputPrefix.vircircRNA_genome.fasta
 bwa mem -t $threads -T 19 -Y $outputPrefix.vircircRNA_genome.fasta $fastqFiles | awk -F'\t' '($o !~ /^@/ && and($2, 4) == 0)' > $outputPrefix.vircircRNA_genome.sam

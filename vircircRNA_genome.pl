@@ -14,7 +14,7 @@ GetOptions(
 if($help || scalar(@ARGV) == 0) {
 	die <<EOF;
 
-Usage:   perl vircircRNA_genome.pl [options] reference.fasta circular.chromocome [...]
+Usage:   perl vircircRNA_genome.pl [options] reference.fasta [...]
 
 Options: -h       display this help message
          -c STR   circular chromosome
@@ -22,6 +22,7 @@ Options: -h       display this help message
 
 EOF
 }
+my %circularChromosomeHash = map {$_ => 1} @circularChromosomeList;
 
 my ($referenceFastaFile) = @ARGV;
 
@@ -41,12 +42,9 @@ my %chromosomeSequenceHash = ();
 	close($reader);
 }
 
-foreach my $chromosome (@circularChromosomeList ? @circularChromosomeList : @chromosomeList) {
-	$chromosomeSequenceHash{$chromosome} = $chromosomeSequenceHash{$chromosome} x 2;
-}
-
 foreach my $chromosome (@chromosomeList) {
 	my $sequence = $chromosomeSequenceHash{$chromosome};
+	$sequence = $sequence x 2 if($circularChromosomeHash{$chromosome} || $circularChromosomeHash{'*'});
 	print ">$chromosome\n";
 	for(my $index = 0; $index < length($sequence); $index += $sequenceLineLength) {
 		print substr($sequence, $index, $sequenceLineLength), "\n";
