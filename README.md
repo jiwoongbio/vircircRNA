@@ -19,8 +19,14 @@ If you already have Git (https://git-scm.com) installed, you can get the latest 
 git clone https://github.com/jiwoongbio/vircircRNA.git
 ```
 
-
 ## Usages
+
+```
+vircircRNA.sh <reference.fasta> <output.prefix> <threads> <input.1.fastq> [input.2.fastq]
+```
+
+
+## Usages (perl)
 
 1. Generate concatenated sequence of circular chromosome
    ```
