@@ -6,10 +6,8 @@ De novo circular RNA detection from circular viral genome
 ## Requirements
 
 1. Perl - https://www.perl.org
-2. BioPerl - http://bioperl.org
-   * Bio::DB::Fasta
-3. BWA - http://bio-bwa.sourceforge.net
-4. Common linux commands: bash, awk, ...
+2. BWA - http://bio-bwa.sourceforge.net
+3. Common linux commands: bash, awk, ...
 
 
 ## Install

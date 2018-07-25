@@ -12,7 +12,6 @@ if [ -z "$fastqFiles" ]; then
 	echo 1>&2
 	exit 1
 fi
-perl -MBio::DB::Fasta -e '' || exit 1
 
 perl $directory/vircircRNA_genome.pl -c '*' $referenceFastaFile > $outputPrefix.vircircRNA_genome.fasta
 

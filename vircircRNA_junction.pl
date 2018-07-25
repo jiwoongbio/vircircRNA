@@ -5,7 +5,6 @@ local $SIG{__WARN__} = sub { die $_[0] };
 
 use List::Util qw(min max sum any all);
 use Scalar::Util qw(looks_like_number);
-use Bio::DB::Fasta;
 use Getopt::Long qw(:config no_ignore_case);
 
 my @circularChromosomeList = ();
@@ -49,8 +48,21 @@ my %circularChromosomeHash = map {$_ => 1} @circularChromosomeList;
 my ($color1, $color2) = split(/,/, $colors);
 
 my ($samFile, $referenceFastaFile) = @ARGV;
-my $db = Bio::DB::Fasta->new($referenceFastaFile);
-my %chromosomeLengthHash = map {$_->[0] => $circularChromosomeHash{$_->[0]} || $circularChromosomeHash{'*'} ? $_->[1] / 2 : $_->[1]} map {[$_, $db->length($_)]} $db->get_all_primary_ids;
+my %chromosomeSequenceHash = ();
+{
+	my $chromosome = '';
+	open(my $reader, $referenceFastaFile);
+	while(my $line = <$reader>) {
+		chomp($line);
+		if($line =~ /^>(\S*)/) {
+			$chromosome = $1;
+		} else {
+			$chromosomeSequenceHash{$chromosome} .= $line;
+		}
+	}
+	close($reader);
+}
+my %chromosomeLengthHash = map {$_->[0] => $circularChromosomeHash{$_->[0]} || $circularChromosomeHash{'*'} ? $_->[1] / 2 : $_->[1]} map {[$_, length($chromosomeSequenceHash{$_})]} keys %chromosomeSequenceHash;
 push(@blockRegionList, map {[$_->[0], $_->[1] + $chromosomeLengthHash{$_->[0]}, $_->[2] + $chromosomeLengthHash{$_->[0]}]} grep {$circularChromosomeHash{$_->[0]} || $circularChromosomeHash{'*'}} @blockRegionList);
 
 my %junctionReadCountHash = ();
@@ -99,21 +111,22 @@ if($gtfFile) {
 			foreach(@junctionCountList) {
 				my ($junction, $chromosome, $position1, $position2, $strand, $count) = @$_;
 				if($tokenHash{'chromosome'} eq $chromosome && $tokenHash{'strand'} eq $strand && any {$_->[0] <= $position1 && $position2 <= $_->[1]} @startEndList) {
-					push(@{$junctionGeneListHash{$junction}}, $attributeHash{$attribute});
+					if(defined(my $gene = $attributeHash{$attribute})) {
+						push(@{$junctionGeneListHash{$junction}}, $gene);
+					}
 				}
 			}
 		}
 	}
 	close($reader);
 
+	@junctionCountList = grep {defined($_->[-1])} map {[@$_, $junctionGeneListHash{$_->[0]}]} @junctionCountList;
 	foreach(@junctionCountList) {
-		my ($junction, $chromosome, $position1, $position2, $strand, $count) = @$_;
-		if(defined(my $geneList = $junctionGeneListHash{$junction})) {
-			my $ratio = ($count + $count) / ($chromosomePositionCountHash{$chromosome}->{"+$position1"} + $chromosomePositionCountHash{$chromosome}->{"-$position2"});
-			my %geneHash = ();
-			my $gene = join(',', map {defined($geneHash{$_}) ? () : ($geneHash{$_} = $_)} @$geneList);
-			print join("\t", $chromosome, $position1, $position2, $strand, $count, $ratio, $gene), "\n";
-		}
+		my ($junction, $chromosome, $position1, $position2, $strand, $count, $geneList) = @$_;
+		my $ratio = ($count + $count) / ($chromosomePositionCountHash{$chromosome}->{"+$position1"} + $chromosomePositionCountHash{$chromosome}->{"-$position2"});
+		my %geneHash = ();
+		my $gene = join(',', map {defined($geneHash{$_}) ? () : ($geneHash{$_} = $_)} @$geneList);
+		print join("\t", $chromosome, $position1, $position2, $strand, $count, $ratio, $gene), "\n";
 	}
 } else {
 	foreach(@junctionCountList) {
@@ -122,7 +135,7 @@ if($gtfFile) {
 		print join("\t", $chromosome, $position1, $position2, $strand, $count, $ratio), "\n";
 	}
 }
-if($alignmentFile) {
+if($alignmentFile && @junctionCountList) {
 	open(my $writer, "> $alignmentFile");
 	print $writer <<EOF;
 <!DOCTYPE html>
@@ -143,8 +156,8 @@ EOF
 			my @alignmentList = sort {length($b->[0]) <=> length($a->[0]) || length($a->[1]) <=> length($b->[1]) || "$a->[0]$a->[1]" cmp "$b->[0]$b->[1]"} @$alignmentList;
 			my $header1 = (' ' x ($alignmentLength - length("$chromosome:$position1"))) . "$chromosome:$position1";
 			my $header2 = $position2 . (' ' x ($alignmentLength - length($position2)));
-			my $sequence1 = $db->seq($chromosome, $position1 - $alignmentLength + 1, $position1);
-			my $sequence2 = $db->seq($chromosome, $position2, $position2 + $alignmentLength - 1);
+			my $sequence1 = substr($chromosomeSequenceHash{$chromosome}, $position1 - $alignmentLength, $alignmentLength);
+			my $sequence2 = substr($chromosomeSequenceHash{$chromosome}, $position2 - 1, $alignmentLength);
 			foreach(@alignmentList) {
 				my ($alignment1, $alignment2) = @$_;
 				$alignment1 = substr($alignment1, -$alignmentLength);
@@ -264,11 +277,11 @@ sub getJunctionList {
 					next if(all {$chromosomeLengthHash{$chromosome1} < min(keys %$_)} $positionBaseHash1, $positionBaseHash2);
 					next if(any {$_->[0] eq $chromosome1 && (($position1 <= $_->[2] && $_->[1] <= $position2) || ($position2 <= $_->[2] && $_->[1] <= $position1))} @blockRegionList);
 					my $site1 = '';
-					$site1 = uc($db->seq($chromosome1, $position1 + 1, $position1 + 2)) if($strand1 eq '+');
-					$site1 = uc($db->seq($chromosome1, $position1 - 2, $position1 - 1)) if($strand1 eq '-');
+					$site1 = uc(substr($chromosomeSequenceHash{$chromosome1}, $position1, 2)) if($strand1 eq '+');
+					$site1 = uc(substr($chromosomeSequenceHash{$chromosome1}, $position1 - 3, 2)) if($strand1 eq '-');
 					my $site2 = '';
-					$site2 = uc($db->seq($chromosome2, $position2 + 1, $position2 + 2)) if($strand2 eq '+');
-					$site2 = uc($db->seq($chromosome2, $position2 - 2, $position2 - 1)) if($strand2 eq '-');
+					$site2 = uc(substr($chromosomeSequenceHash{$chromosome2}, $position2, 2)) if($strand2 eq '+');
+					$site2 = uc(substr($chromosomeSequenceHash{$chromosome2}, $position2 - 3, 2)) if($strand2 eq '-');
 					my $alignment1 = getAlignment($strand1, $position1, %$positionBaseHash1);
 					my $alignment2 = getAlignment($strand2, $position2, %$positionBaseHash2);
 					if($strand1 eq '+' && $strand2 eq '-' && ("$site1$site2" eq 'GTAG')) {
