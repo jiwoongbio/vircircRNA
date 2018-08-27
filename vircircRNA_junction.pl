@@ -11,6 +11,7 @@ my @circularChromosomeList = ();
 my @blockRegionList = ();
 GetOptions(
 	'h' => \(my $help = ''),
+	'p' => \(my $printAll = ''),
 	'q=i' => \(my $minimumMappingQuality = 0),
 	's=s' => \(my $stranded = ''),
 	'c=s' => \@circularChromosomeList,
@@ -29,6 +30,7 @@ if($help || scalar(@ARGV) == 0) {
 Usage:   perl vircircRNA_junction.pl [options] softclipping.sam reference.fasta > junction.txt
 
 Options: -h       display this help message
+         -p       print both forward-splice and back-splice junctions
          -q INT   minimum mapping quality [$minimumMappingQuality]
          -s STR   stranded, "f" or "r"
          -c STR   circular chromosome, "*" for all chromosomes
@@ -91,7 +93,7 @@ foreach(sort {compare($a, $b)} map {[split(/\t/, $_)]} keys %junctionReadCountHa
 	my ($chromosome, $position1, $position2, $strand) = @$_;
 	my $junction = join("\t", $chromosome, $position1, $position2, $strand);
 	my $count = sum(values %{$junctionReadCountHash{$junction}});
-	push(@junctionCountList, [$junction, $chromosome, $position1, $position2, $strand, $count]) if($position2 <= $position1);
+	push(@junctionCountList, [$junction, $chromosome, $position1, $position2, $strand, $count]) if($position2 <= $position1 || $printAll);
 	$chromosomePositionCountHash{$chromosome}->{"+$position1"} += $count;
 	$chromosomePositionCountHash{$chromosome}->{"-$position2"} += $count;
 }
@@ -110,7 +112,8 @@ if($gtfFile) {
 			push(@startEndList, [map {$_ + $chromosomeLengthHash{$tokenHash{'chromosome'}}} @tokenHash{'start', 'end'}]) if($circularChromosomeHash{$tokenHash{'chromosome'}} || $circularChromosomeHash{'*'});
 			foreach(@junctionCountList) {
 				my ($junction, $chromosome, $position1, $position2, $strand, $count) = @$_;
-				if($tokenHash{'chromosome'} eq $chromosome && $tokenHash{'strand'} eq $strand && any {$_->[0] <= $position1 && $position2 <= $_->[1]} @startEndList) {
+				my ($start, $end) = sort {$a <=> $b} ($position1, $position2);
+				if($tokenHash{'chromosome'} eq $chromosome && $tokenHash{'strand'} eq $strand && any {$_->[0] <= $end && $start <= $_->[1]} @startEndList) {
 					if(defined(my $gene = $attributeHash{$attribute})) {
 						push(@{$junctionGeneListHash{$junction}}, $gene);
 					}
@@ -240,19 +243,19 @@ sub addJunctionList {
 						my $readStrandNumber = "$readStrand$number";
 						if($stranded eq '') {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1);
+							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
 						} elsif($stranded eq 'f' && $strand eq '+' && any {$_ eq $readStrandNumber} ('+0', '+1', '-2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1);
+							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
 						} elsif($stranded eq 'f' && $strand eq '-' && any {$_ eq $readStrandNumber} ('-0', '-1', '+2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1);
+							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
 						} elsif($stranded eq 'r' && $strand eq '+' && any {$_ eq $readStrandNumber} ('-0', '-1', '+2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1);
+							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
 						} elsif($stranded eq 'r' && $strand eq '-' && any {$_ eq $readStrandNumber} ('+0', '+1', '-2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1);
+							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
 						}
 					}
 				}
