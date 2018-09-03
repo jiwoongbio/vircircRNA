@@ -16,7 +16,6 @@ GetOptions(
 	'a=s' => \(my $attribute = 'gene_id'),
 	'X=f' => \(my $multiplex = 0.1),
 	'Y=f' => \(my $multipley = 50),
-	'L=f' => \(my $multipleLineThick = 0.01),
 	'T=i' => \(my $boxExtraThick = 0),
 	'F=i' => \(my $boxFontSize = 10),
 );
@@ -33,13 +32,14 @@ Options: -h       display this help message
          -a STR   GTF attribute [$attribute]
          -X FLOAT multiple of x [$multiplex]
          -Y FLOAT multiple of y [$multipley]
-         -L FLOAT multiple of line thick [$multipleLineThick]
          -T INT   box extra thick [$boxExtraThick]
          -F INT   box font size [$boxFontSize]
 
 EOF
 }
 my ($junctionFile, $referenceFastaFile, $targetChromosome, $targetStrand) = @ARGV;
+my ($targetStart, $targetEnd) = (1, 0);
+($targetChromosome, $targetStart, $targetEnd) = ($1, $2, $3) if($targetChromosome =~ /^(.*):([0-9]+)-([0-9]+)$/);
 $targetStrand = '+' if($targetStrand eq 'f' || $targetStrand eq 'forward');
 $targetStrand = '-' if($targetStrand eq 'r' || $targetStrand eq 'reverse');
 
@@ -57,6 +57,7 @@ my $chromosomeLength = 0;
 	}
 	close($reader);
 }
+$targetEnd = $chromosomeLength if($targetEnd == 0);
 $chromosomeLength = $chromosomeLength / 2 if($isCircularChromosome);
 
 my @geneStartEndListList = ();
@@ -96,10 +97,9 @@ if($gtfFile) {
 	}
 }
 
-my $image = new GD::Image(getPixel($isCircularChromosome ? $chromosomeLength * 2 : $chromosomeLength) + 1 + $boxExtraThick * 2, $multipley * (2 + scalar(@geneStartEndListList)) + 1 + $boxExtraThick);
-my $white = $image->colorAllocate(255, 255, 255);
-my $black = $image->colorAllocate(0, 0, 0);
-my $red = $image->colorAllocate(255, 0, 0);
+my $image = new GD::Image(getPixel($targetEnd) + 1 + $boxExtraThick, $multipley * (2 + scalar(@geneStartEndListList)) + 1 + $boxExtraThick);
+my $white = getColor($image, '#FFFFFF');
+my $black = getColor($image, '#000000');
 
 my $y = $multipley * 2;
 if(@geneStartEndListList) {
@@ -118,34 +118,34 @@ if(@geneStartEndListList) {
 	open(my $reader, $junctionFile);
 	while(my $line = <$reader>) {
 		chomp($line);
-		my ($chromosome, $position1, $position2, $strand, $count, $ratio) = split(/\t/, $line);
-		my $thick = $count * $multipleLineThick;
+		my ($chromosome, $position1, $position2, $strand, $thick, $color) = split(/\t/, $line);
+		$color = getColor($image, $color);
 		if($chromosome eq $targetChromosome && $strand eq $targetStrand) {
 			{
 				my ($x1, $x2) = map {getPixel($_)} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
 				if($position1 < $position2) {
-					angleThick($image, $x1, $y1, $x2, $y2, $black, $thick);
+					angleThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				} else {
-					arcThick($image, $x1, $y1, $x2, $y2, $red, $thick);
+					arcThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				}
 			}
 			if($isCircularChromosome && $position1 <= $chromosomeLength && $position2 <= $chromosomeLength) {
 				my ($x1, $x2) = map {getPixel($_)} map {$_ + $chromosomeLength} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
 				if($position1 < $position2) {
-					angleThick($image, $x1, $y1, $x2, $y2, $black, $thick);
+					angleThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				} else {
-					arcThick($image, $x1, $y1, $x2, $y2, $red, $thick);
+					arcThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				}
 			}
 			if($isCircularChromosome && $position1 > $chromosomeLength && $position2 > $chromosomeLength) {
 				my ($x1, $x2) = map {getPixel($_)} map {$_ - $chromosomeLength} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
 				if($position1 < $position2) {
-					angleThick($image, $x1, $y1, $x2, $y2, $black, $thick);
+					angleThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				} else {
-					arcThick($image, $x1, $y1, $x2, $y2, $red, $thick);
+					arcThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				}
 			}
 		}
@@ -157,29 +157,30 @@ binmode STDOUT;
 print $image->png(0);
 
 sub angleThick {
-	my ($image, $x1, $y1, $x2, $y2, $color, $thick) = @_;
+	my ($image, $x1, $y1, $x2, $y2, $thick, $color) = @_;
 	my ($cx, $cy) = (int(($x1 + $x2) / 2), $y2);
 	my $width = ($cx - $x1) * 2 + 1;
-	foreach(map {$y1 - $_} 0 .. $thick) {
-		$image->line($x1, $cy, $cx, $_, $color);
-		$image->line($x2, $cy, $cx, $_, $color);
+	foreach(0 .. $thick) {
+		$image->line($x1, $cy, $cx, $y1 - $_, $color);
+		$image->line($x2, $cy, $cx, $y1 - $_, $color);
 	}
-	foreach(map {$y1 + $_} 0 .. $thick) {
-		$image->line($x1, $cy, $cx, $_, $color);
-		$image->line($x2, $cy, $cx, $_, $color);
+	foreach(0 .. $thick) {
+		$image->line($x1, $cy, $cx, $y1 + $_, $color);
+		$image->line($x2, $cy, $cx, $y1 + $_, $color);
 	}
 }
 
 sub arcThick {
-	my ($image, $x1, $y1, $x2, $y2, $color, $thick) = @_;
+	my ($image, $x1, $y1, $x2, $y2, $thick, $color) = @_;
 	my ($cx, $cy) = (int(($x1 + $x2) / 2), $y2);
-	my $width = ($cx - $x1) * 2 + 1;
-	foreach(map {$y1 - $_} 0 .. $thick) {
-		my $height = ($y2 - $_) * 2 + 1;
+	foreach(0 .. $thick) {
+		my $width = ($cx - $x1) * 2 + 1;
+		my $height = ($y2 - ($y1 - $_)) * 2 + 1;
 		$image->arc($cx, $cy, $width, $height, 180, 360, $color);
 	}
-	foreach(map {$y1 + $_} 0 .. $thick) {
-		my $height = ($y2 - $_) * 2 + 1;
+	foreach(0 .. $thick) {
+		my $width = ($cx - $x1) * 2 + 1;
+		my $height = ($y2 - ($y1 + $_)) * 2 + 1;
 		$image->arc($cx, $cy, $width, $height, 180, 360, $color);
 	}
 }
@@ -187,8 +188,8 @@ sub arcThick {
 sub boxText {
 	my ($image, $x1, $y1, $x2, $y2, $color, $text) = @_;
 	foreach(0 .. $boxExtraThick) {
-		$image->rectangle($x1 - $_, $y1 - $_, $x2 + $_, $y2 + $_, $black);
-		$image->rectangle($x1 + $_, $y1 + $_, $x2 - $_, $y2 - $_, $black);
+		$image->rectangle($x1 - $_, $y1 - $_, $x2 + $_, $y2 + $_, $color);
+		$image->rectangle($x1 + $_, $y1 + $_, $x2 - $_, $y2 - $_, $color);
 	}
 
 	my $align = GD::Text::Align->new($image, valign => 'center', halign => 'center', color => $color);
@@ -197,6 +198,18 @@ sub boxText {
 	$align->draw(int(($x1 + $x2) / 2), int(($y1 + $y2) / 2), 0);
 }
 
+sub getColor {
+	my ($image, $color) = @_;
+	if($color =~ /^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/) {
+		return $image->colorAllocate(map {hex} ($1, $2, $3));
+	} else {
+		my $red = 255 - int((1 - $color) * 256);
+		$red = 0 if($red < 0);
+		$red = 255 if($red > 255);
+		return $image->colorAllocate($red, 0, 0);
+	}
+}
+
 sub getPixel {
-	return sprintf('%.0f', ($_[0] - 1) * $multiplex + $boxExtraThick);
+	return sprintf('%.0f', ($_[0] - $targetStart) * $multiplex + $boxExtraThick);
 }
