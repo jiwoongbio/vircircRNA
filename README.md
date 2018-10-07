@@ -8,7 +8,7 @@ De novo circular RNA detection from circular viral genome
 1. Bash (/bin/bash) in Linux or Mac OS
 2. Perl - https://www.perl.org
 3. BWA - http://bio-bwa.sourceforge.net
-4. Samtools - http://www.htslib.org (optional) to reduce disk usage by excluding unmapped reads from SAM file
+4. SAMtools - http://www.htslib.org (optional) to reduce disk usage by excluding unmapped reads from SAM file
 5. Perl module "GD" and "GD::Text::Align" - https://metacpan.org/pod/GD and https://metacpan.org/pod/GD::Text::Align (optional) to draw diagram
 
 
@@ -30,7 +30,7 @@ git clone https://github.com/jiwoongbio/vircircRNA.git
 ```
 ./vircircRNA.sh NC_001526.4.fasta NC_001526.4.gff3 SRS2410540 SRS2410540.part.1.fastq.gz SRS2410540.part.2.fastq.gz
 ```
-![](hnRNPM_KD.CD44.png)
+![](SRS2410540.vircircRNA_diagram.png)
 
 
 ## Usages (step-by-step)
