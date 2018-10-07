@@ -5,15 +5,17 @@ local $SIG{__WARN__} = sub { die $_[0] };
 
 use GD;
 use GD::Text::Align;
+use List::Util qw(all);
 use Getopt::Long qw(:config no_ignore_case);
 
 GetOptions(
 	'h' => \(my $help = ''),
-	'c' => \(my $isCircularChromosome = ''),
+	'l' => \(my $isLinearChromosome = ''),
+	'r=s' => \(my $targetRegion = ''),
 	't=s' => \(my $ttfFile = ''),
-	'g=s' => \(my $gtfFile = ''),
-	'f=s' => \(my $feature = 'exon'),
-	'a=s' => \(my $attribute = 'gene_id'),
+	'g=s' => \(my $gffFile = ''),
+	'f=s' => \(my $feature = 'gene'),
+	'a=s' => \(my $attribute = 'gene'),
 	'X=f' => \(my $multiplex = 0.1),
 	'Y=f' => \(my $multipley = 50),
 	'T=i' => \(my $boxExtraThick = 0),
@@ -22,10 +24,11 @@ GetOptions(
 if($help || scalar(@ARGV) == 0) {
 	die <<EOF;
 
-Usage:   perl vircircRNA_diagram.pl [options] junction.txt reference.fasta chromosome f|forward|r|reverse > diagram.png
+Usage:   perl vircircRNA_diagram.pl [options] junction.txt chromosome.fasta > diagram.png
 
 Options: -h       display this help message
-         -c       is circular chromosome
+         -l       is linear chromosome
+         -r STR   target region
          -t STR   TTF file
          -g STR   GTF file
          -f STR   GTF feature [$feature]
@@ -37,47 +40,64 @@ Options: -h       display this help message
 
 EOF
 }
-my ($junctionFile, $referenceFastaFile, $targetChromosome, $targetStrand) = @ARGV;
-my ($targetStart, $targetEnd) = (1, 0);
-($targetChromosome, $targetStart, $targetEnd) = ($1, $2, $3) if($targetChromosome =~ /^(.*):([0-9]+)-([0-9]+)$/);
-$targetStrand = '+' if($targetStrand eq 'f' || $targetStrand eq 'forward');
-$targetStrand = '-' if($targetStrand eq 'r' || $targetStrand eq 'reverse');
 
-my $chromosomeLength = 0;
+my ($junctionFile, $fastaFile) = @ARGV;
+
+my @chromosomeList = ();
+my %chromosomeSequenceHash = ();
 {
 	my $chromosome = '';
-	open(my $reader, $referenceFastaFile);
+	open(my $reader, $fastaFile);
 	while(my $line = <$reader>) {
 		chomp($line);
 		if($line =~ /^>(\S*)/) {
-			$chromosome = $1;
+			push(@chromosomeList, $chromosome = $1);
 		} else {
-			$chromosomeLength += length($line) if($chromosome eq $targetChromosome);
+			$chromosomeSequenceHash{$chromosome} .= $line;
 		}
 	}
 	close($reader);
 }
-$targetEnd = $chromosomeLength if($targetEnd == 0);
-$chromosomeLength = $chromosomeLength / 2 if($isCircularChromosome);
+my %chromosomeLengthHash = map {$_ => length($chromosomeSequenceHash{$_})} @chromosomeList;
+
+my $targetChromosome = $chromosomeList[0];
+my ($targetStart, $targetEnd) = (1, $chromosomeLengthHash{$targetChromosome});
+($targetChromosome, $targetStart, $targetEnd) = ($1, $2, $3) if($targetRegion =~ /^(.*):([0-9]+)-([0-9]+)$/);
+if($isLinearChromosome eq '') {
+	$chromosomeLengthHash{$_} = $chromosomeLengthHash{$_} / 2 foreach(@chromosomeList);
+}
+my $chromosomeLength = $chromosomeLengthHash{$targetChromosome};
 
 my @geneStartEndListList = ();
-if($gtfFile) {
+if($gffFile) {
 	my @geneStartEndList = ();
-	open(my $reader, $gtfFile);
+	open(my $reader, $gffFile);
 	while(my $line = <$reader>) {
 		chomp($line);
 		next if($line =~ /^#/);
+		next if($line eq '');
 		my %tokenHash = ();
 		@tokenHash{'chromosome', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attribute'} = split(/\t/, $line);
+		my @attributeList = split(/; */, $tokenHash{'attribute'});
 		my %attributeHash = ();
-		$attributeHash{$1} = $2 while($tokenHash{'attribute'} =~ m/([^"; ]+) +"([^"]+)";/g);
-		if($tokenHash{'chromosome'} eq $targetChromosome && $tokenHash{'strand'} eq $targetStrand && $tokenHash{'feature'} eq $feature) {
+		if(all {/^(\S+)=(.*)$/} @attributeList) {
+			foreach(@attributeList) {
+				/^(\S+)=(.*)$/;
+				$attributeHash{$1} = $2;
+			}
+		} elsif(all {/^(\S+) "(.*)"$/} @attributeList) {
+			foreach(@attributeList) {
+				/^(\S+) "(.*)"$/;
+				$attributeHash{$1} = $2;
+			}
+		}
+		if($tokenHash{'chromosome'} eq $targetChromosome && $tokenHash{'feature'} eq $feature) {
 			if(defined(my $gene = $attributeHash{$attribute})) {
 				{
 					my ($start, $end) = @tokenHash{'start', 'end'};
 					push(@geneStartEndList, [$gene, $start, $end]);
 				}
-				if($isCircularChromosome) {
+				if($isLinearChromosome eq '') {
 					my ($start, $end) = map {$_ + $chromosomeLength} @tokenHash{'start', 'end'};
 					push(@geneStartEndList, [$gene, $start, $end]);
 				}
@@ -119,8 +139,9 @@ if(@geneStartEndListList) {
 	while(my $line = <$reader>) {
 		chomp($line);
 		my ($chromosome, $position1, $position2, $strand, $thick, $color) = split(/\t/, $line);
+		$thick = log($thick) / log(2);
 		$color = getColor($image, $color);
-		if($chromosome eq $targetChromosome && $strand eq $targetStrand) {
+		if($chromosome eq $targetChromosome) {
 			{
 				my ($x1, $x2) = map {getPixel($_)} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
@@ -130,7 +151,7 @@ if(@geneStartEndListList) {
 					arcThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				}
 			}
-			if($isCircularChromosome && $position1 <= $chromosomeLength && $position2 <= $chromosomeLength) {
+			if($isLinearChromosome eq '' && $position1 <= $chromosomeLength && $position2 <= $chromosomeLength) {
 				my ($x1, $x2) = map {getPixel($_)} map {$_ + $chromosomeLength} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
 				if($position1 < $position2) {
@@ -139,7 +160,7 @@ if(@geneStartEndListList) {
 					arcThick($image, $x1, $y1, $x2, $y2, $thick, $color);
 				}
 			}
-			if($isCircularChromosome && $position1 > $chromosomeLength && $position2 > $chromosomeLength) {
+			if($isLinearChromosome eq '' && $position1 > $chromosomeLength && $position2 > $chromosomeLength) {
 				my ($x1, $x2) = map {getPixel($_)} map {$_ - $chromosomeLength} sort {$a <=> $b} ($position1, $position2);
 				my ($y1, $y2) = ($multipley, $multipley * 2);
 				if($position1 < $position2) {

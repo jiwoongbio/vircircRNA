@@ -1,0 +1,42 @@
+##sequence-region NC_001526.4 1 7906
+##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=333760
+NC_001526.4	RefSeq	region	1	7906	.	+	.	ID=NC_001526.4:1..7906;Dbxref=taxon:333760;Is_circular=true;gbkey=Src;genome=genomic;mol_type=genomic DNA
+NC_001526.4	RefSeq	gene	1	2756	.	+	.	ID=gene-HpV16gp5;Dbxref=GeneID:1489076;Name=E1^E4;gbkey=Gene;gene=E1^E4;gene_biotype=protein_coding;locus_tag=HpV16gp5
+NC_001526.4	RefSeq	CDS	1	16	.	+	0	ID=cds-YP_009268708.1;Parent=gene-HpV16gp5;Dbxref=Genbank:YP_009268708.1,GeneID:1489076;Name=YP_009268708.1;Note=Spliced. E1^E4. Contributes to the replication of the viral plasmid genome as a nuclear plasmid in basal cells. It is a multifunctional protein and contributes to different processes in both the early and late stages of the virus life cycle.;experiment=EXISTENCE:;gbkey=CDS;gene=E1^E4;product=cell cycle modulating protein E1^E4;protein_id=YP_009268708.1
+NC_001526.4	RefSeq	CDS	2494	2756	.	+	2	ID=cds-YP_009268708.1;Parent=gene-HpV16gp5;Dbxref=Genbank:YP_009268708.1,GeneID:1489076;Name=YP_009268708.1;Note=Spliced. E1^E4. Contributes to the replication of the viral plasmid genome as a nuclear plasmid in basal cells. It is a multifunctional protein and contributes to different processes in both the early and late stages of the virus life cycle.;experiment=EXISTENCE:;gbkey=CDS;gene=E1^E4;product=cell cycle modulating protein E1^E4;protein_id=YP_009268708.1
+NC_001526.4	RefSeq	gene	1	1950	.	+	.	ID=gene-HpV16gp3;Dbxref=GeneID:1489075;Name=E1;gbkey=Gene;gene=E1;gene_biotype=protein_coding;locus_tag=HpV16gp3
+NC_001526.4	RefSeq	CDS	1	1950	.	+	0	ID=cds-NP_041327.2;Parent=gene-HpV16gp3;Dbxref=Genbank:NP_041327.2,GeneID:1489075;Name=NP_041327.2;experiment=EXISTENCE:;gbkey=CDS;gene=E1;product=replication protein E1;protein_id=NP_041327.2
+NC_001526.4	RefSeq	sequence_difference	275	275	.	+	.	ID=id-HpV16gp3;Dbxref=GeneID:1489075;Note=Inserted G was absent in original clone (Seedorf et al.%2C 1985). Restores E1 ORF.';gbkey=misc_difference;gene=E1
+NC_001526.4	RefSeq	gene	1892	2989	.	+	.	ID=gene-HpV16gp4;Dbxref=GeneID:1489080;Name=E2;gbkey=Gene;gene=E2;gene_biotype=protein_coding;locus_tag=HpV16gp4
+NC_001526.4	RefSeq	CDS	1892	2989	.	+	0	ID=cds-NP_041328.1;Parent=gene-HpV16gp4;Dbxref=Genbank:NP_041328.1,GeneID:1489080;Name=NP_041328.1;Note=E2. Plays a role in the initiation of viral DNA replication. Forms E1-E2 dimer with replication protein E1. The E1-E2 complex binds to the replication origin which contains binding sites for both proteins.;gbkey=CDS;gene=E2;product=regulatory protein E2;protein_id=NP_041328.1
+NC_001526.4	RefSeq	sequence_difference	2062	2062	.	+	.	ID=id-HpV16gp4;Dbxref=GeneID:1489080;Note=replaced G with A;gbkey=misc_difference;gene=E2
+NC_001526.4	RefSeq	gene	2986	3237	.	+	.	ID=gene-HpV16gp6;Dbxref=GeneID:1489077;Name=E5;gbkey=Gene;gene=E5;gene_biotype=protein_coding;locus_tag=HpV16gp6
+NC_001526.4	RefSeq	CDS	2986	3237	.	+	0	ID=cds-NP_041330.2;Parent=gene-HpV16gp6;Dbxref=Genbank:NP_041330.2,GeneID:1489077;Name=NP_041330.2;Note=E5. Oncoprotein. Contributes to cell transformation. Produces polyploid cells by endoreplication.;experiment=EXISTENCE:;gbkey=CDS;gene=E5;product=transforming protein E5;protein_id=NP_041330.2
+NC_001526.4	RefSeq	sequence_difference	3043	3043	.	+	.	ID=id-HpV16gp6;Dbxref=GeneID:1489077;Note=Inserted T was absent in the original sequence. Restores E5 ORF.;gbkey=misc_difference;gene=E5
+NC_001526.4	RefSeq	polyA_signal_sequence	3351	3356	.	+	.	ID=id-NC_001526.4:3351..3356;Note=putative;gbkey=regulatory;regulatory_class=polyA_signal_sequence
+NC_001526.4	RefSeq	gene	3373	4794	.	+	.	ID=gene-HpV16gp7;Dbxref=GeneID:1489081;Name=L2;gbkey=Gene;gene=L2;gene_biotype=protein_coding;locus_tag=HpV16gp7
+NC_001526.4	RefSeq	CDS	3373	4794	.	+	0	ID=cds-NP_041331.2;Parent=gene-HpV16gp7;Dbxref=Genbank:NP_041331.2,GeneID:1489081;Name=NP_041331.2;Note=L2. Forms an icosahedral capsid. Plays an essential role in virus assembly by recruiting viral components to PML bodies%2C the proposed sites of virus morphogenesis.;experiment=EXISTENCE:;gbkey=CDS;gene=L2;product=minor capsid protein L2;protein_id=NP_041331.2
+NC_001526.4	RefSeq	sequence_difference	3501	3501	.	+	.	ID=id-HpV16gp7;Dbxref=GeneID:1489081;Note=A in the original sequence is changed to T.;gbkey=misc_difference;gene=L2
+NC_001526.4	RefSeq	TATA_box	3427	3433	.	+	.	ID=id-HpV16gp7-2;Dbxref=GeneID:1489081;gbkey=regulatory;gene=L2;regulatory_class=TATA_box
+NC_001526.4	RefSeq	gene	4775	6292	.	+	.	ID=gene-HpV16gp8;Dbxref=GeneID:1489082;Name=L1;gbkey=Gene;gene=L1;gene_biotype=protein_coding;locus_tag=HpV16gp8
+NC_001526.4	RefSeq	CDS	4775	6292	.	+	0	ID=cds-NP_041332.2;Parent=gene-HpV16gp8;Dbxref=Genbank:NP_041332.2,GeneID:1489082;Name=NP_041332.2;experiment=EXISTENCE:;gbkey=CDS;gene=L1;product=major capsid protein L1;protein_id=NP_041332.2
+NC_001526.4	RefSeq	sequence_difference	5378	5378	.	+	.	ID=id-HpV16gp8;Dbxref=GeneID:1489082;Note=C in original clone replaced wth G;gbkey=misc_difference;gene=L1
+NC_001526.4	RefSeq	sequence_difference	6039	6041	.	+	.	ID=id-HpV16gp8-2;Dbxref=GeneID:1489082;Note=inserted CAT absent from original sequence;gbkey=misc_difference;gene=L1
+NC_001526.4	RefSeq	sequence_difference	6088	6088	.	+	.	ID=id-HpV16gp8-3;Dbxref=GeneID:1489082;Note=GAT in original sequence deleted;gbkey=misc_difference;gene=L1
+NC_001526.4	RefSeq	sequence_feature	6293	7124	.	+	.	ID=id-NC_001526.4:6293..7124;Note=Upstream regulatory region (URR). Contains DNA-protein binding motifs. Involved in replication. Synonims: long control region (LCR)%2C noncoding region (NCR).;function=URR;gbkey=misc_feature
+NC_001526.4	RefSeq	polyA_signal_sequence	6398	6403	.	+	.	ID=id-NC_001526.4:6398..6403;gbkey=regulatory;regulatory_class=polyA_signal_sequence
+NC_001526.4	RefSeq	sequence_difference	6570	6570	.	+	.	ID=id-NC_001526.4:6570..6570;Note=GC in original sequence change to CGG;gbkey=misc_difference
+NC_001526.4	RefSeq	sequence_feature	6589	6600	.	+	.	ID=id-NC_001526.4:6589..6600;Note=E2BS;function=E2 binding site;gbkey=misc_feature
+NC_001526.4	RefSeq	sequence_feature	6996	7007	.	+	.	ID=id-NC_001526.4:6996..7007;function=E2 binding site;gbkey=misc_feature
+NC_001526.4	RefSeq	sequence_difference	6997	6997	.	+	.	ID=id-NC_001526.4:6997..6997;Note=A in original sequence was deleted;gbkey=misc_difference
+NC_001526.4	RefSeq	TATA_box	7059	7065	.	+	.	ID=id-NC_001526.4:7059..7065;gbkey=regulatory;regulatory_class=TATA_box
+NC_001526.4	RefSeq	sequence_feature	7077	7088	.	+	.	ID=id-NC_001526.4:7077..7088;Note=E2BS;function=E2 binding site;gbkey=misc_feature
+NC_001526.4	RefSeq	sequence_feature	7092	7103	.	+	.	ID=id-NC_001526.4:7092..7103;Note=E2BS;function=E2 binding site;gbkey=misc_feature
+NC_001526.4	RefSeq	TATA_box	7107	7113	.	+	.	ID=id-NC_001526.4:7107..7113;gbkey=regulatory;regulatory_class=TATA_box
+NC_001526.4	RefSeq	gene	7125	7601	.	+	.	ID=gene-HpV16gp1;Dbxref=GeneID:1489078;Name=E6;gbkey=Gene;gene=E6;gene_biotype=protein_coding;locus_tag=HpV16gp1
+NC_001526.4	RefSeq	CDS	7125	7601	.	+	0	ID=cds-NP_041325.1;Parent=gene-HpV16gp1;Dbxref=Genbank:NP_041325.1,GeneID:1489078;Name=NP_041325.1;Note=Oncoprotein. It has long been recognized as a potent oncogene and is intimately associated with the events that result in the malignant conversion of virally infected cells.;experiment=EXISTENCE:;gbkey=CDS;gene=E6;product=transforming protein E6;protein_id=NP_041325.1
+NC_001526.4	RefSeq	CDS	7125	7268	.	+	0	ID=cds-YP_009268707.1;Parent=gene-HpV16gp1;Dbxref=Genbank:YP_009268707.1,GeneID:1489078;Name=YP_009268707.1;Note=Spliced. E6*. Function is not known yet.;experiment=EXISTENCE:;gbkey=CDS;gene=E6;product=protein E6*;protein_id=YP_009268707.1
+NC_001526.4	RefSeq	CDS	7451	7459	.	+	0	ID=cds-YP_009268707.1;Parent=gene-HpV16gp1;Dbxref=Genbank:YP_009268707.1,GeneID:1489078;Name=YP_009268707.1;Note=Spliced. E6*. Function is not known yet.;experiment=EXISTENCE:;gbkey=CDS;gene=E6;product=protein E6*;protein_id=YP_009268707.1
+NC_001526.4	RefSeq	gene	7604	7900	.	+	.	ID=gene-HpV16gp2;Dbxref=GeneID:1489079;Name=E7;gbkey=Gene;gene=E7;gene_biotype=protein_coding;locus_tag=HpV16gp2
+NC_001526.4	RefSeq	CDS	7604	7900	.	+	0	ID=cds-NP_041326.1;Parent=gene-HpV16gp2;Dbxref=Genbank:NP_041326.1,GeneID:1489079;Name=NP_041326.1;Note=E7. Plays a role in viral genome replication by driving entry of quiescent cells into the cell cycle.;experiment=EXISTENCE:;gbkey=CDS;gene=E7;product=transforming protein E7;protein_id=NP_041326.1
+

@@ -7,18 +7,17 @@ use List::Util qw(min max sum any all);
 use Scalar::Util qw(looks_like_number);
 use Getopt::Long qw(:config no_ignore_case);
 
-my @circularChromosomeList = ();
 my @blockRegionList = ();
 GetOptions(
 	'h' => \(my $help = ''),
+	'l' => \(my $isLinearChromosome = ''),
 	'p' => \(my $printAll = ''),
 	'q=i' => \(my $minimumMappingQuality = 0),
 	's=s' => \(my $stranded = ''),
-	'c=s' => \@circularChromosomeList,
 	'b=s' => \@blockRegionList,
-	'g=s' => \(my $gtfFile = ''),
-	'f=s' => \(my $feature = 'exon'),
-	'a=s' => \(my $attribute = 'gene_id'),
+	'g=s' => \(my $gffFile = ''),
+	'f=s' => \(my $feature = 'gene'),
+	'a=s' => \(my $attribute = 'gene'),
 	'A=s' => \(my $alignmentFile = ''),
 	'L=i' => \(my $alignmentLength = 100),
 	'F=i' => \(my $fontSize = 10),
@@ -27,13 +26,13 @@ GetOptions(
 if($help || scalar(@ARGV) == 0) {
 	die <<EOF;
 
-Usage:   perl vircircRNA_junction.pl [options] softclipping.sam reference.fasta > junction.txt
+Usage:   perl vircircRNA_junction.pl [options] softclipping.sam chromosome.fasta > junction.txt
 
 Options: -h       display this help message
+         -l       is linear chromosome
          -p       print both forward-splice and back-splice junctions
          -q INT   minimum mapping quality [$minimumMappingQuality]
          -s STR   stranded, "f" or "r"
-         -c STR   circular chromosome, "*" for all chromosomes
          -b STR   block region
          -g STR   GTF file
          -f STR   GTF feature [$feature]
@@ -45,27 +44,32 @@ Options: -h       display this help message
 
 EOF
 }
-my %circularChromosomeHash = map {$_ => 1} @circularChromosomeList;
 @blockRegionList = map {($_ =~ /^(.+):([0-9]+)-([0-9]+)$/) ? [$1, $2, $3] : ()} @blockRegionList;
 my ($color1, $color2) = split(/,/, $colors);
 
-my ($samFile, $referenceFastaFile) = @ARGV;
+my ($samFile, $fastaFile) = @ARGV;
+
+my @chromosomeList = ();
 my %chromosomeSequenceHash = ();
 {
 	my $chromosome = '';
-	open(my $reader, $referenceFastaFile);
+	open(my $reader, $fastaFile);
 	while(my $line = <$reader>) {
 		chomp($line);
 		if($line =~ /^>(\S*)/) {
-			$chromosome = $1;
+			push(@chromosomeList, $chromosome = $1);
 		} else {
 			$chromosomeSequenceHash{$chromosome} .= $line;
 		}
 	}
 	close($reader);
 }
-my %chromosomeLengthHash = map {$_->[0] => $circularChromosomeHash{$_->[0]} || $circularChromosomeHash{'*'} ? $_->[1] / 2 : $_->[1]} map {[$_, length($chromosomeSequenceHash{$_})]} keys %chromosomeSequenceHash;
-push(@blockRegionList, map {[$_->[0], $_->[1] + $chromosomeLengthHash{$_->[0]}, $_->[2] + $chromosomeLengthHash{$_->[0]}]} grep {$circularChromosomeHash{$_->[0]} || $circularChromosomeHash{'*'}} @blockRegionList);
+my %chromosomeLengthHash = map {$_ => length($chromosomeSequenceHash{$_})} @chromosomeList;
+
+if($isLinearChromosome eq '') {
+	$chromosomeLengthHash{$_} = $chromosomeLengthHash{$_} / 2 foreach(@chromosomeList);
+	push(@blockRegionList, map {[$_->[0], $_->[1] + $chromosomeLengthHash{$_->[0]}, $_->[2] + $chromosomeLengthHash{$_->[0]}]} @blockRegionList);
+}
 
 my %junctionReadCountHash = ();
 my %junctionAlignmentListHash = ();
@@ -97,19 +101,31 @@ foreach(sort {compare($a, $b)} map {[split(/\t/, $_)]} keys %junctionReadCountHa
 	$chromosomePositionCountHash{$chromosome}->{"+$position1"} += $count;
 	$chromosomePositionCountHash{$chromosome}->{"-$position2"} += $count;
 }
-if($gtfFile) {
+if($gffFile ne '') {
 	my %junctionGeneListHash = ();
-	open(my $reader, $gtfFile);
+	open(my $reader, $gffFile);
 	while(my $line = <$reader>) {
 		chomp($line);
 		next if($line =~ /^#/);
+		next if($line eq '');
 		my %tokenHash = ();
 		@tokenHash{'chromosome', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attribute'} = split(/\t/, $line);
+		my @attributeList = split(/; */, $tokenHash{'attribute'});
 		my %attributeHash = ();
-		$attributeHash{$1} = $2 while($tokenHash{'attribute'} =~ m/([^"; ]+) +"([^"]+)";/g);
+		if(all {/^(\S+)=(.*)$/} @attributeList) {
+			foreach(@attributeList) {
+				/^(\S+)=(.*)$/;
+				$attributeHash{$1} = $2;
+			}
+		} elsif(all {/^(\S+) "(.*)"$/} @attributeList) {
+			foreach(@attributeList) {
+				/^(\S+) "(.*)"$/;
+				$attributeHash{$1} = $2;
+			}
+		}
 		if($tokenHash{'feature'} eq $feature) {
 			my @startEndList = ([@tokenHash{'start', 'end'}]);
-			push(@startEndList, [map {$_ + $chromosomeLengthHash{$tokenHash{'chromosome'}}} @tokenHash{'start', 'end'}]) if($circularChromosomeHash{$tokenHash{'chromosome'}} || $circularChromosomeHash{'*'});
+			push(@startEndList, [map {$_ + $chromosomeLengthHash{$tokenHash{'chromosome'}}} @tokenHash{'start', 'end'}]) if($isLinearChromosome eq '');
 			foreach(@junctionCountList) {
 				my ($junction, $chromosome, $position1, $position2, $strand, $count) = @$_;
 				my ($start, $end) = sort {$a <=> $b} ($position1, $position2);

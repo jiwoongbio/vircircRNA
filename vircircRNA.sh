@@ -2,20 +2,28 @@
 #!/bin/bash
 
 directory=`dirname $0`
-referenceFastaFile=$1
-outputPrefix=$2
-threads=$3
+fastaFile=$1
+gffFile=$2
+outputPrefix=$3
 fastqFiles=${@:4}
 
 if [ -z "$fastqFiles" ]; then
-	echo 'Usage: ./vircircRNA.sh <reference.fasta> <output.prefix> <threads> <input.1.fastq> [input.2.fastq]' 1>&2
+	echo 'Usage: ./vircircRNA.sh <chromosome.fasta> <gene.gff> <output.prefix> <input.1.fastq> [input.2.fastq]' 1>&2
 	echo 1>&2
 	exit 1
 fi
 
-perl $directory/vircircRNA_genome.pl -c '*' $referenceFastaFile > $outputPrefix.vircircRNA_genome.fasta
+perl $directory/vircircRNA_chromosome.pl $fastaFile > $outputPrefix.vircircRNA_chromosome.fasta
 
-bwa index $outputPrefix.vircircRNA_genome.fasta
-bwa mem -t $threads -T 19 -Y $outputPrefix.vircircRNA_genome.fasta $fastqFiles | awk -F'\t' '($o !~ /^@/ && and($2, 4) == 0)' > $outputPrefix.vircircRNA_genome.sam
+bwa index $outputPrefix.vircircRNA_chromosome.fasta
+if [ -x "$(command -v samtools)" ]; then
+	bwa mem -T 19 -Y $outputPrefix.vircircRNA_chromosome.fasta $fastqFiles | samtools view -S -h -F 4 - > $outputPrefix.vircircRNA_chromosome.sam
+else
+	bwa mem -T 19 -Y $outputPrefix.vircircRNA_chromosome.fasta $fastqFiles > $outputPrefix.vircircRNA_chromosome.sam
+fi
 
-perl $directory/vircircRNA_junction.pl -c '*' -A $outputPrefix.vircircRNA_junction.alignment.html $outputPrefix.vircircRNA_genome.sam $outputPrefix.vircircRNA_genome.fasta > $outputPrefix.vircircRNA_junction.txt
+perl $directory/vircircRNA_junction.pl -g $gffFile -A $outputPrefix.vircircRNA_junction.alignment.html $outputPrefix.vircircRNA_chromosome.sam $outputPrefix.vircircRNA_chromosome.fasta > $outputPrefix.vircircRNA_junction.txt
+
+if perl -MGD -MGD::Text::Align -e '' 2> /dev/null; then
+	perl $directory/vircircRNA_diagram.pl -g $gffFile $outputPrefix.vircircRNA_junction.txt $outputPrefix.vircircRNA_chromosome.fasta > $outputPrefix.vircircRNA_diagram.png
+fi
