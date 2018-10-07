@@ -7,26 +7,26 @@ De novo circular RNA detection from circular viral genome
 
 1. Bash (/bin/bash) in Linux or Mac OS
 2. Perl - https://www.perl.org
-3. BWA - http://bio-bwa.sourceforge.net
+3. BWA - http://bio-bwa.sourceforge.net (tested on 0.7.17)
 4. SAMtools - http://www.htslib.org (optional) to reduce disk usage by excluding unmapped reads from SAM file
 5. Perl module "GD" and "GD::Text::Align" - https://metacpan.org/pod/GD and https://metacpan.org/pod/GD::Text::Align (optional) to draw diagram
 
 
 ## Install
 
-If you already have Git (https://git-scm.com) installed, you can get the latest development version using Git.
+If you already have Git (https://git-scm.com) installed, you can get the latest development version using Git. It will take a few seconds.
 ```
 git clone https://github.com/jiwoongbio/vircircRNA.git
 ```
 
 
-## Usages
+## Usages (simple)
 
 ```
 ./vircircRNA.sh <circular_chromosome.fasta> <gene.gff> <output.prefix> <input.1.fastq> [input.2.fastq]
 ```
 
-* Demo
+* Demo (circular RNA detection from HPV genome). It will take a few minutes.
 ```
 ./vircircRNA.sh NC_001526.4.fasta NC_001526.4.gff3 SRS2410540 SRS2410540.part.1.fastq.gz SRS2410540.part.2.fastq.gz
 ```
