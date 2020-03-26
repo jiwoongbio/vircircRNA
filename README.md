@@ -55,3 +55,11 @@ perl vircircRNA_junction.pl -g <gene.gff> -A <junction.alignment.html> <mapped_r
 ```
 perl vircircRNA_diagram.pl -g <gene.gff> <junction.txt> <concatenated_circular_chromosome.fasta> <chromosome> > <diagram.png>
 ```
+
+
+## Citation
+
+Zhao J, Lee EE, Kim J, Yang R, Chamseddin B, Ni C, Gusho E, Xie Y, Chiang CM, Buszczak M, Zhan X, Laimins L, Wang RC.
+"Transforming activity of an oncoprotein-encoding circular RNA from human papillomavirus"
+Nature Communications. 2019 May 24;10(1):2300.
+PMID: [31127091](https://www.ncbi.nlm.nih.gov/pubmed/31127091)

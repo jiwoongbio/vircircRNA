@@ -13,6 +13,7 @@ GetOptions(
 	'l' => \(my $isLinearChromosome = ''),
 	'p' => \(my $printAll = ''),
 	'q=i' => \(my $minimumMappingQuality = 0),
+	'm=i' => \(my $minimumAlignmentLength = 16),
 	's=s' => \(my $stranded = ''),
 	'b=s' => \@blockRegionList,
 	'g=s' => \(my $gffFile = ''),
@@ -22,6 +23,7 @@ GetOptions(
 	'L=i' => \(my $alignmentLength = 100),
 	'F=i' => \(my $fontSize = 10),
 	'C=s' => \(my $colors = '#880000,#000088'),
+	'R=s' => \(my $readNameFile = ''),
 );
 if($help || scalar(@ARGV) == 0) {
 	die <<EOF;
@@ -32,6 +34,7 @@ Options: -h       display this help message
          -l       is linear chromosome
          -p       print both forward-splice and back-splice junctions
          -q INT   minimum mapping quality [$minimumMappingQuality]
+         -m INT   minimum alignment length [$minimumAlignmentLength]
          -s STR   stranded, "f" or "r"
          -b STR   block region
          -g STR   GTF file
@@ -41,6 +44,7 @@ Options: -h       display this help message
          -L INT   alignment length [$alignmentLength]
          -F INT   alignment font size [$fontSize]
          -C STR   alignment colors [$colors]
+         -R FILE  read name file
 
 EOF
 }
@@ -73,6 +77,7 @@ if($isLinearChromosome eq '') {
 
 my %junctionReadCountHash = ();
 my %junctionAlignmentListHash = ();
+my %junctionReadNameListHash = ();
 open(my $reader, $samFile);
 my ($readName, @tokenHashList) = ('');
 while(my $line = <$reader>) {
@@ -97,7 +102,11 @@ foreach(sort {compare($a, $b)} map {[split(/\t/, $_)]} keys %junctionReadCountHa
 	my ($chromosome, $position1, $position2, $strand) = @$_;
 	my $junction = join("\t", $chromosome, $position1, $position2, $strand);
 	my $count = sum(values %{$junctionReadCountHash{$junction}});
-	push(@junctionCountList, [$junction, $chromosome, $position1, $position2, $strand, $count]) if($position2 <= $position1 || $printAll);
+	if($position2 <= $position1 || $printAll) {
+		if(max(map {length($_->[0])} @{$junctionAlignmentListHash{$junction}}) >= $minimumAlignmentLength && max(map {length($_->[1])} @{$junctionAlignmentListHash{$junction}}) >= $minimumAlignmentLength) {
+			push(@junctionCountList, [$junction, $chromosome, $position1, $position2, $strand, $count]);
+		}
+	}
 	$chromosomePositionCountHash{$chromosome}->{"+$position1"} += $count;
 	$chromosomePositionCountHash{$chromosome}->{"-$position2"} += $count;
 }
@@ -154,7 +163,7 @@ if($gffFile ne '') {
 		print join("\t", $chromosome, $position1, $position2, $strand, $count, $ratio), "\n";
 	}
 }
-if($alignmentFile && @junctionCountList) {
+if($alignmentFile ne '' && @junctionCountList) {
 	open(my $writer, "> $alignmentFile");
 	print $writer <<EOF;
 <!DOCTYPE html>
@@ -196,6 +205,17 @@ EOF
 </body>
 </html>
 EOF
+	close($writer);
+}
+if($readNameFile ne '' && @junctionCountList) {
+	open(my $writer, "> $readNameFile");
+	foreach(@junctionCountList) {
+		my ($junction, $chromosome, $position1, $position2, $strand, $count) = @$_;
+		foreach(@{$junctionReadNameListHash{$junction}}) {
+			my ($readName, $number, $readStrand) = @$_;
+			print $writer join("\t", $chromosome, $position1, $position2, $strand, $readName, $number, $readStrand), "\n";
+		}
+	}
 	close($writer);
 }
 
@@ -259,19 +279,34 @@ sub addJunctionList {
 						my $readStrandNumber = "$readStrand$number";
 						if($stranded eq '') {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
+							if($position2 <= $position1 || $printAll) {
+								push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]);
+								push(@{$junctionReadNameListHash{$junction}}, [$readName, $number, $readStrand]) if($readNameFile ne '');
+							}
 						} elsif($stranded eq 'f' && $strand eq '+' && any {$_ eq $readStrandNumber} ('+0', '+1', '-2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
+							if($position2 <= $position1 || $printAll) {
+								push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]);
+								push(@{$junctionReadNameListHash{$junction}}, [$readName, $number, $readStrand]) if($readNameFile ne '');
+							}
 						} elsif($stranded eq 'f' && $strand eq '-' && any {$_ eq $readStrandNumber} ('-0', '-1', '+2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
+							if($position2 <= $position1 || $printAll) {
+								push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]);
+								push(@{$junctionReadNameListHash{$junction}}, [$readName, $number, $readStrand]) if($readNameFile ne '');
+							}
 						} elsif($stranded eq 'r' && $strand eq '+' && any {$_ eq $readStrandNumber} ('-0', '-1', '+2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
+							if($position2 <= $position1 || $printAll) {
+								push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]);
+								push(@{$junctionReadNameListHash{$junction}}, [$readName, $number, $readStrand]) if($readNameFile ne '');
+							}
 						} elsif($stranded eq 'r' && $strand eq '-' && any {$_ eq $readStrandNumber} ('+0', '+1', '-2')) {
 							$junctionReadCountHash{$junction}->{$readStrandNumber} += 1;
-							push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]) if($position2 <= $position1 || $printAll);
+							if($position2 <= $position1 || $printAll) {
+								push(@{$junctionAlignmentListHash{$junction}}, [$alignment1, $alignment2]);
+								push(@{$junctionReadNameListHash{$junction}}, [$readName, $number, $readStrand]) if($readNameFile ne '');
+							}
 						}
 					}
 				}
